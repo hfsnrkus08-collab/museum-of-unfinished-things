@@ -1,0 +1,881 @@
+<!DOCTYPE html>
+<html lang="tr" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Yarım Kalmış Şeyler Müzesi — Museum of Unfinished Things</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,600&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg-void: #08080a;
+      --bg-chamber: #101014;
+      --gold-antique: #c5a059;
+      --gold-light: #e3c888;
+      --parchment: #eae4d7;
+      --parchment-muted: #9e978a;
+      --room-accent: #c5a059;
+      --room-glow: rgba(197, 160, 89, 0.16);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      background-color: var(--bg-void);
+      color: var(--parchment);
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+      scroll-behavior: smooth;
+    }
+
+    .font-display { font-family: 'Cinzel', serif; }
+    .font-editorial { font-family: 'Cormorant Garamond', serif; }
+    .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+    /* Film Grain */
+    .film-grain {
+      position: fixed; inset: 0; pointer-events: none; z-index: 50; opacity: 0.035;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+    }
+
+    #dustCanvas { position: fixed; inset: 0; pointer-events: none; z-index: 1; }
+
+    .room-atmosphere {
+      position: fixed; inset: 0; pointer-events: none; z-index: 0;
+      background: radial-gradient(circle at 50% 15%, var(--room-glow) 0%, transparent 60%),
+                  radial-gradient(circle at 50% 100%, rgba(10, 10, 14, 0.95) 0%, var(--bg-void) 75%);
+    }
+
+    /* Cinematic Entrance Curtain */
+    #entranceCurtain {
+      position: fixed; inset: 0; z-index: 9999;
+      background: radial-gradient(circle at 50% 35%, #171410 0%, #070709 75%);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      text-align: center; padding: 2rem;
+      transition: opacity 0.9s cubic-bezier(0.22, 1, 0.36, 1), visibility 0.9s ease;
+    }
+    #entranceCurtain.hidden-curtain { opacity: 0; visibility: hidden; pointer-events: none; }
+
+    .curtain-arch {
+      position: absolute; width: min(540px, 90vw); height: min(680px, 84vh);
+      border: 1px solid rgba(197, 160, 89, 0.22); border-radius: 270px 270px 0 0;
+      pointer-events: none; box-shadow: inset 0 0 90px rgba(197, 160, 89, 0.06), 0 0 120px rgba(0, 0, 0, 0.9);
+    }
+    .curtain-arch-inner {
+      position: absolute; inset: 14px; border: 1px solid rgba(197, 160, 89, 0.12); border-radius: 260px 260px 0 0;
+    }
+
+    #enterMuseumBtn {
+      position: relative; z-index: 10000; cursor: pointer;
+      background: linear-gradient(180deg, rgba(197, 160, 89, 0.16) 0%, rgba(197, 160, 89, 0.06) 100%);
+      border: 1px solid var(--gold-antique); color: var(--gold-light);
+      padding: 1rem 2.6rem; font-family: 'Cinzel', serif; font-size: 0.9rem; letter-spacing: 0.24em;
+      transition: all 0.35s ease; box-shadow: 0 0 35px rgba(197, 160, 89, 0.15);
+    }
+    #enterMuseumBtn:hover {
+      background: var(--gold-antique); color: #09090b; box-shadow: 0 0 45px rgba(197, 160, 89, 0.45); transform: translateY(-2px);
+    }
+
+    /* Header */
+    header {
+      position: sticky; top: 0; z-index: 40; background: rgba(8, 8, 10, 0.88);
+      backdrop-filter: blur(14px); border-bottom: 1px solid rgba(197, 160, 89, 0.18);
+    }
+    .header-inner {
+      max-width: 1360px; margin: 0 auto; padding: 0.9rem 1.5rem;
+      display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.85rem;
+    }
+
+    .btn-gold {
+      background: linear-gradient(135deg, #c5a059 0%, #9c7a38 100%); color: #09090b; border: none;
+      font-family: 'Cinzel', serif; font-weight: 600; letter-spacing: 0.14em; padding: 0.85rem 1.8rem;
+      cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 25px rgba(197, 160, 89, 0.22);
+    }
+    .btn-gold:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 32px rgba(197, 160, 89, 0.38); }
+
+    .btn-ghost {
+      background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(197, 160, 89, 0.28); color: var(--parchment);
+      font-family: 'JetBrains Mono', monospace; font-size: 0.74rem; padding: 0.48rem 0.9rem; cursor: pointer;
+      transition: all 0.25s ease; border-radius: 3px;
+    }
+    .btn-ghost:hover { border-color: var(--gold-antique); color: var(--gold-light); background: rgba(197, 160, 89, 0.09); }
+
+    main { position: relative; z-index: 10; max-width: 1100px; margin: 0 auto; padding: 2.2rem 1.5rem 7.5rem; }
+
+    .chamber-panel {
+      background: linear-gradient(180deg, rgba(22, 22, 28, 0.92) 0%, rgba(13, 13, 17, 0.96) 100%);
+      border: 1px solid rgba(197, 160, 89, 0.22); box-shadow: 0 24px 70px rgba(0, 0, 0, 0.72);
+      padding: 2.5rem; border-radius: 4px;
+    }
+
+    textarea, input, select {
+      background: #09090c; border: 1px solid rgba(197, 160, 89, 0.28); color: var(--parchment);
+      font-family: 'Cormorant Garamond', serif; border-radius: 3px; outline: none;
+    }
+    textarea:focus, input:focus, select:focus { border-color: var(--gold-antique); }
+
+    /* Single Masterpiece Artwork Stage */
+    .artwork-stage {
+      position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center;
+      padding: 1rem 0; perspective: 1100px;
+    }
+    .spotlight-cone {
+      position: absolute; top: -30px; left: 50%; transform: translateX(-50%); width: 85%; height: 110%;
+      background: radial-gradient(ellipse at 50% 0%, var(--room-glow) 0%, transparent 70%); pointer-events: none; z-index: 0;
+    }
+    .frame-wrapper {
+      position: relative; z-index: 2; width: 100%; max-width: 480px; padding: 18px;
+      background: linear-gradient(145deg, #3c2e16 0%, #19140c 45%, #382a14 100%);
+      border: 2px solid var(--gold-antique);
+      box-shadow: 0 30px 70px rgba(0, 0, 0, 0.9), inset 0 0 0 4px #0e0d0b, inset 0 0 0 6px rgba(197, 160, 89, 0.45);
+    }
+    .artwork-viewport { position: relative; width: 100%; aspect-ratio: 3 / 4; overflow: hidden; background: #09090c; }
+    .artwork-img { width: 100%; height: 100%; object-fit: cover; display: block; animation: kenBurns 18s ease-in-out infinite alternate; }
+    @keyframes kenBurns { 0% { transform: scale(1) translate(0, 0); } 100% { transform: scale(1.05) translate(-1%, -1%); } }
+
+    .curator-plaque {
+      margin-top: 1.8rem; background: linear-gradient(180deg, rgba(25, 22, 17, 0.92) 0%, rgba(14, 13, 12, 0.96) 100%);
+      border: 1px solid rgba(197, 160, 89, 0.32); border-left: 3px solid var(--gold-antique);
+      padding: 1.25rem 1.5rem; border-radius: 3px;
+    }
+
+    .poem-line {
+      display: block; padding: 0.35rem 0.6rem; border-left: 2px solid transparent; color: var(--parchment-muted); transition: all 0.4s ease;
+    }
+    .poem-line.speaking-active {
+      color: var(--gold-light); border-left-color: var(--gold-antique); background: rgba(197, 160, 89, 0.08); transform: translateX(4px);
+    }
+
+    /* Persistent Dual Audio Console */
+    #audioConsole {
+      position: fixed; bottom: 0; left: 0; right: 0; z-index: 38;
+      background: rgba(9, 9, 12, 0.94); backdrop-filter: blur(14px);
+      border-top: 1px solid rgba(197, 160, 89, 0.24); padding: 0.65rem 1.5rem;
+    }
+    .audio-console-inner {
+      max-width: 1200px; margin: 0 auto; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem;
+    }
+    input[type="range"] {
+      -webkit-appearance: none; width: 80px; height: 3px; background: rgba(197, 160, 89, 0.3); border: none; border-radius: 2px;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none; width: 12px; height: 12px; border-radius: 50%; background: var(--gold-antique); cursor: pointer;
+    }
+
+    /* Jury Drawer */
+    #juryDrawer {
+      position: fixed; top: 0; right: 0; bottom: 0; width: min(540px, 95vw); background: #0d0d11;
+      border-left: 1px solid rgba(197, 160, 89, 0.35); z-index: 60; transform: translateX(100%);
+      transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1); overflow-y: auto; padding: 1.75rem; box-shadow: -25px 0 70px rgba(0, 0, 0, 0.9);
+    }
+    #juryDrawer.open { transform: translateX(0); }
+
+    .exhibit-grid { display: grid; grid-template-columns: 1fr 1.15fr; gap: 2.5rem; align-items: start; }
+    @media (max-width: 900px) { .exhibit-grid { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <div class="room-atmosphere"></div>
+  <canvas id="dustCanvas"></canvas>
+  <div class="film-grain"></div>
+
+  <!-- CINEMATIC ENTRANCE CURTAIN -->
+  <div id="entranceCurtain">
+    <div class="curtain-arch"><div class="curtain-arch-inner"></div></div>
+    <div style="position: relative; z-index: 10000; max-width: 640px;">
+      <p class="font-mono" style="font-size: 0.72rem; letter-spacing: 0.32em; color: var(--gold-antique); text-transform: uppercase; margin-bottom: 1.1rem;">
+        KÜRATÖRYEL ARŞİV • 2026
+      </p>
+      <h1 class="font-display" style="font-size: clamp(2rem, 5vw, 3.4rem); font-weight: 500; letter-spacing: 0.16em; line-height: 1.2; color: var(--parchment); margin-bottom: 0.7rem;">
+        YARIM KALMIŞ ŞEYLER<br />MÜZESİ
+      </h1>
+      <p class="font-editorial" style="font-style: italic; font-size: 1.35rem; color: var(--gold-light); margin-bottom: 1.6rem;">
+        "Hiçbir yarım kalmışlık unutulmaz."
+      </p>
+      <p class="font-editorial" style="font-size: 1.12rem; line-height: 1.75; color: var(--parchment-muted); max-width: 490px; margin: 0 auto 2.3rem;">
+        Gönderilmemiş mektupların, yarım kalmış melodilerin ve söylenmeden yutulmuş cümlelerin sessiz galerisine hoş geldiniz. Bıraktığınız anı, tek ve kusursuz bir sanat eserine dönüşür.
+      </p>
+      <button type="button" id="enterMuseumBtn" onclick="window.enterMuseum()">MÜZEYE GİR →</button>
+    </div>
+  </div>
+
+  <!-- STICKY HEADER -->
+  <header>
+    <div class="header-inner">
+      <div style="display: flex; align-items: center; gap: 0.65rem;">
+        <span style="color: var(--gold-antique); font-size: 1.1rem;">✦</span>
+        <span class="font-display" style="font-size: 0.98rem; letter-spacing: 0.18em; color: var(--parchment);">
+          YARIM KALMIŞ ŞEYLER MÜZESİ
+        </span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 0.55rem;">
+        <span id="apiStatusBadge" class="font-mono" style="font-size: 0.68rem; padding: 0.35rem 0.65rem; border-radius: 3px; border: 1px solid rgba(197,160,89,0.3); color: var(--gold-light); background: rgba(197,160,89,0.08);">
+          ● DEMO MODU
+        </span>
+        <button type="button" class="btn-ghost" onclick="window.toggleApiDrawer()">⚙ API ve Ses</button>
+        <button type="button" class="btn-ghost" onclick="window.toggleJuryDrawer()">🔬 Jüri Modu</button>
+      </div>
+    </div>
+
+    <!-- API Drawer -->
+    <div id="apiDrawer" style="display: none; border-top: 1px solid rgba(197,160,89,0.18); background: #0c0c10; padding: 1.1rem 1.5rem;">
+      <div style="max-width: 1200px; margin: 0 auto; display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 1rem;">
+        <div style="flex: 1; min-width: 260px;">
+          <label class="font-mono" style="display: block; font-size: 0.7rem; color: var(--gold-light); margin-bottom: 0.35rem;">GOOGLE GEMINI API ANAHTARI</label>
+          <input type="password" id="geminiApiKeyInput" placeholder="AIzaSy..." style="width: 100%; padding: 0.55rem 0.8rem; font-family: 'JetBrains Mono', monospace; font-size: 0.8rem;" />
+        </div>
+        <div>
+          <label class="font-mono" style="display: block; font-size: 0.7rem; color: var(--gold-light); margin-bottom: 0.35rem;">MODEL</label>
+          <select id="geminiModelSelect" style="padding: 0.55rem 0.8rem; font-family: 'JetBrains Mono', monospace; font-size: 0.78rem;">
+            <option value="gemini-3-flash-preview">gemini-3-flash-preview</option>
+            <option value="gemini-3.8-flash">gemini-3.8-flash</option>
+          </select>
+        </div>
+        <div>
+          <label class="font-mono" style="display: block; font-size: 0.7rem; color: var(--gold-light); margin-bottom: 0.35rem;">ANLATICI SESİ</label>
+          <select id="voiceActorSelectTop" onchange="window.syncVoiceActor(this.value)" style="padding: 0.55rem 0.8rem; font-family: 'JetBrains Mono', monospace; font-size: 0.78rem;">
+            <option value="Aoede">Aoede</option>
+            <option value="Charon">Charon</option>
+            <option value="Kore">Kore</option>
+            <option value="Fenrir">Fenrir</option>
+          </select>
+        </div>
+        <div style="display: flex; gap: 0.5rem;">
+          <button type="button" class="btn-gold" style="padding: 0.58rem 1.2rem; font-size: 0.76rem;" onclick="window.saveApiSettings()">KAYDET</button>
+          <button type="button" class="btn-ghost" onclick="window.clearApiSettings()">TEMİZLE</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN CONTAINER -->
+  <main>
+    <!-- VIEW 1: STORY INPUT -->
+    <section id="inputSection" class="chamber-panel" style="max-width: 820px; margin: 0 auto;">
+      <div style="text-align: center; margin-bottom: 1.8rem;">
+        <p class="font-mono" style="font-size: 0.7rem; letter-spacing: 0.25em; color: var(--gold-antique); margin-bottom: 0.6rem;">
+          MERKEZ KABUL SALONU
+        </p>
+        <h2 class="font-display" style="font-size: clamp(1.5rem, 3vw, 2.2rem); font-weight: 500; letter-spacing: 0.1em; margin-bottom: 0.75rem;">
+          YARIM KALMIŞ HİKÂYENİZİ BIRAKIN
+        </h2>
+        <p class="font-editorial" style="font-size: 1.15rem; color: var(--parchment-muted); max-width: 580px; margin: 0 auto; line-height: 1.65;">
+          Anınızı yazın; yapay zeka küratörlerimiz onu tek ve kusursuz bir sanat eserine, oda müziğine ve vurgulu şiirsel seslendirmeye dönüştürsün.
+        </p>
+      </div>
+
+      <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; margin-bottom: 0.9rem;">
+        <span class="font-mono" style="font-size: 0.68rem; color: var(--parchment-muted);">ÖRNEK ANILAR:</span>
+        <button type="button" class="btn-ghost" onclick="window.loadSample(0)">I. Gönderilmeyen Mektup</button>
+        <button type="button" class="btn-ghost" onclick="window.loadSample(1)">II. Yarım Kalan Piyano Parçası</button>
+      </div>
+
+      <textarea id="storyInput" rows="5" placeholder="Zihninizde yarım kalmış anıyı, cümleyi ya da melodiyi buraya yazın..." style="width: 100%; padding: 1.1rem; font-size: 1.15rem; line-height: 1.65; resize: vertical;"></textarea>
+
+      <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem; margin-top: 1.1rem;">
+        <span class="font-mono" style="font-size: 0.7rem; color: var(--parchment-muted);">✦ Tek Başyapıt • Vurgulu Şiir Okuma • Küratör Notu</span>
+        <button type="button" id="generateBtn" class="btn-gold" onclick="window.runMuseumPipeline()">BAŞYAPITI OLUŞTUR →</button>
+      </div>
+
+      <!-- Live Telemetry Box -->
+      <div id="pipelineStatusBox" style="display: none; margin-top: 1.6rem; padding-top: 1.2rem; border-top: 1px solid rgba(197,160,89,0.18);">
+        <div id="liveTelemetryLine" class="font-mono" style="font-size: 0.76rem; color: var(--gold-light);">Küratörler başyapıtı hazırlıyor...</div>
+      </div>
+    </section>
+
+    <!-- VIEW 2: MASTERPIECE GALLERY EXHIBITION -->
+    <section id="exhibitionSection" style="display: none;">
+      <div style="text-align: center; margin-bottom: 2.2rem;">
+        <p class="font-mono" id="catalogMetaTag" style="font-size: 0.7rem; letter-spacing: 0.22em; color: var(--gold-antique); margin-bottom: 0.5rem;">
+          KATALOG #MUF-2026-104 • MERKEZ SALON
+        </p>
+        <h2 class="font-display" id="exhibitionTitle" style="font-size: clamp(1.6rem, 3.5vw, 2.5rem); font-weight: 500; letter-spacing: 0.12em; margin-bottom: 1.0rem;">
+          BAŞYAPIT BAŞLIĞI
+        </h2>
+        <div style="max-width: 720px; margin: 0 auto; padding: 1.1rem 1.6rem; border: 1px solid rgba(197,160,89,0.28); background: rgba(16,16,20,0.85);">
+          <div class="font-mono" style="font-size: 0.64rem; letter-spacing: 0.2em; color: var(--parchment-muted); margin-bottom: 0.35rem;">SÖYLENMEMİŞ EN ÖNEMLİ CÜMLE</div>
+          <p id="unspokenSentence" class="font-editorial" style="font-style: italic; font-size: 1.45rem; color: var(--gold-light);">"..."</p>
+        </div>
+      </div>
+
+      <div class="chamber-panel">
+        <div class="exhibit-grid">
+          <!-- Left: Single Masterpiece Artwork -->
+          <div>
+            <div class="artwork-stage">
+              <div class="spotlight-cone"></div>
+              <div class="frame-wrapper">
+                <div class="artwork-viewport">
+                  <img id="masterpieceImg" class="artwork-img" alt="Başyapıt Görseli" />
+                  <div style="position: absolute; bottom: 10px; right: 10px; display: flex; gap: 6px;">
+                    <button type="button" class="btn-ghost" style="padding: 0.35rem 0.7rem;" onclick="window.downloadArtwork()">⇩ PNG İndir</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <p id="artSourceTag" class="font-mono" style="text-align: center; font-size: 0.66rem; color: var(--parchment-muted); margin-top: 0.6rem;">Görsel Kaynağı: Hazırlanıyor...</p>
+          </div>
+
+          <!-- Right: Description, Poem & Curator Note -->
+          <div>
+            <div class="font-mono" style="font-size: 0.72rem; letter-spacing: 0.2em; color: var(--gold-antique); margin-bottom: 0.4rem;">MERKEZİ SANAT ESERİ • THE MASTERPIECE</div>
+            <h3 id="artTitle" class="font-display" style="font-size: 1.75rem; font-weight: 500; margin-bottom: 0.35rem;">Eser Adı</h3>
+            <p id="artMedium" class="font-editorial" style="font-style: italic; font-size: 1.05rem; color: var(--parchment-muted); margin-bottom: 1.1rem;">Tuval Üzerine Yağlıboya</p>
+
+            <p id="artDescription" class="font-editorial" style="font-size: 1.2rem; line-height: 1.8; color: var(--parchment); margin-bottom: 1.4rem;">...</p>
+
+            <!-- Studio Voice Narration Box -->
+            <div style="padding: 1.25rem; background: rgba(8, 8, 10, 0.72); border: 1px solid rgba(197,160,89,0.32); margin-bottom: 1.4rem;">
+              <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; margin-bottom: 0.9rem; padding-bottom: 0.75rem; border-bottom: 1px solid rgba(197,160,89,0.16);">
+                <button type="button" id="narrateBtn" class="btn-gold" style="padding: 0.55rem 1.1rem; font-size: 0.76rem;" onclick="window.toggleNarration()">
+                  ▶ VURGULU ŞİİRİ SESLENDİR
+                </button>
+                <div style="display: flex; align-items: center; gap: 0.4rem;">
+                  <span class="font-mono" style="font-size: 0.66rem; color: var(--parchment-muted);">SES:</span>
+                  <select id="voiceActorSelectRoom" onchange="window.syncVoiceActor(this.value)" style="padding: 0.35rem 0.55rem; font-size: 0.72rem;">
+                    <option value="Aoede">Aoede</option>
+                    <option value="Charon">Charon</option>
+                    <option value="Kore">Kore</option>
+                    <option value="Fenrir">Fenrir</option>
+                  </select>
+                </div>
+              </div>
+              <div id="poemLinesContainer" class="font-editorial" style="font-style: italic; font-size: 1.24rem; line-height: 1.8;">...</div>
+            </div>
+
+            <!-- Curator Note Plaque -->
+            <div class="curator-plaque">
+              <div class="font-mono" style="font-size: 0.68rem; letter-spacing: 0.18em; color: var(--gold-antique); margin-bottom: 0.4rem;">◆ KÜRATÖR NOTU</div>
+              <p id="curatorNote" class="font-editorial" style="font-size: 1.08rem; line-height: 1.7; color: var(--parchment-muted);">...</p>
+            </div>
+          </div>
+        </div>
+
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 2.5rem; padding-top: 1.4rem; border-top: 1px solid rgba(197,160,89,0.16); flex-wrap: wrap; gap: 1rem;">
+          <button type="button" class="btn-ghost" onclick="window.resetExhibition()">← Yeni Bir Hikâye Bırak</button>
+          <button type="button" class="btn-gold" onclick="window.downloadCertificate()">⇩ MÜZE SERTİFİKASINI İNDİR (PNG)</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- PERSISTENT AUDIO CONSOLE -->
+  <div id="audioConsole">
+    <div class="audio-console-inner">
+      <div style="display: flex; align-items: center; gap: 0.75rem;">
+        <button type="button" id="musicToggleBtn" class="btn-ghost" onclick="window.toggleAmbientMusic()">▶ Oda Müziği</button>
+        <div>
+          <div class="font-editorial" style="font-style: italic; font-size: 0.98rem; color: var(--gold-light);">Nocturne for Unfinished Rooms</div>
+          <div class="font-mono" style="font-size: 0.64rem; color: var(--parchment-muted);">Oda Piyanosu • 56 BPM</div>
+        </div>
+        <input type="range" id="musicVolumeSlider" min="0" max="100" value="55" oninput="window.setMusicVolume(this.value)" />
+      </div>
+      <div style="display: flex; align-items: center; gap: 0.75rem;">
+        <span class="font-mono" style="font-size: 0.64rem; color: var(--parchment-muted);">Ses Seviyesi</span>
+        <input type="range" id="voiceVolumeSlider" min="0" max="100" value="90" oninput="window.setVoiceVolume(this.value)" />
+      </div>
+    </div>
+  </div>
+
+  <!-- JURY INSPECTOR DRAWER -->
+  <aside id="juryDrawer" aria-label="Jüri Teknik Denetim Çekmecesi">
+    <div style="display: flex; align-items: center; justify-content: space-between; padding-bottom: 1rem; border-bottom: 1px solid rgba(197,160,89,0.25); margin-bottom: 1.4rem;">
+      <h3 class="font-display" style="font-size: 1.15rem;">KÜRATÖRYEL JÜRİ DENETİMİ</h3>
+      <button type="button" class="btn-ghost" onclick="window.toggleJuryDrawer()">✕</button>
+    </div>
+    <div class="font-mono" style="font-size: 0.7rem; color: var(--gold-antique); margin-bottom: 0.5rem;">OLGU ve YORUM ANALİZİ</div>
+    <ul id="juryFactsList" class="font-editorial" style="font-size: 0.95rem; padding-left: 1rem; color: var(--parchment); margin-bottom: 1.2rem;">
+      <li>Henüz analiz çalıştırılmadı.</li>
+    </ul>
+    <pre id="juryTelemetryLogs" class="font-mono" style="font-size: 0.68rem; background: #070709; border: 1px solid rgba(197,160,89,0.2); padding: 0.75rem; white-space: pre-wrap; color: #a7a094; max-height: 200px; overflow-y: auto;">Sistem beklemede...</pre>
+  </aside>
+
+  <script>
+    const STATE = {
+      hasExhibition: false,
+      apiKey: localStorage.getItem('muf_gemini_key') || '',
+      model: localStorage.getItem('muf_gemini_model') || 'gemini-3-flash-preview',
+      voiceActor: localStorage.getItem('muf_voice_actor') || 'Aoede',
+      exhibitionData: null,
+      storyAnalysis: null,
+      qualityCheck: null,
+      masterpieceDataUrl: null,
+      telemetry: [],
+      audioCtx: null,
+      musicGain: null,
+      voiceGain: null,
+      musicPlaying: false,
+      musicTimer: null,
+      musicVolume: 0.55,
+      voiceVolume: 0.90,
+      isNarrating: false,
+      speechTimer: null
+    };
+
+    const SAMPLES = [
+      "Üç sayfa boyunca ona neden gitmemesi gerektiğini yazdım. Zarfı kapattım, kırmızı balmumuyla mühürledim, üzerine adını bile yazdım ama posta kutusunun önünden her geçişimde cebimdeki o ağır zarfa dokunup geri döndüm.",
+      "Babam vefat etmeden bir hafta önce birlikte bestelediğimiz piyano parçasının son sekiz ölçüsünü boş bırakmıştı. 'Burayı sen tamamla' demişti ama o günden beri piyanonun kapağını bile açamadım."
+    ];
+
+    window.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('geminiApiKeyInput').value = STATE.apiKey;
+      document.getElementById('geminiModelSelect').value = STATE.model;
+      document.getElementById('voiceActorSelectTop').value = STATE.voiceActor;
+      document.getElementById('voiceActorSelectRoom').value = STATE.voiceActor;
+      initDustParticles();
+    });
+
+    window.enterMuseum = function () {
+      document.getElementById('entranceCurtain').classList.add('hidden-curtain');
+      try { initAudioEngine(); } catch (e) {}
+    };
+
+    function initDustParticles() {
+      const canvas = document.getElementById('dustCanvas');
+      const ctx = canvas.getContext('2d');
+      let w = (canvas.width = window.innerWidth), h = (canvas.height = window.innerHeight);
+      window.addEventListener('resize', () => { w = canvas.width = window.innerWidth; h = canvas.height = window.innerHeight; });
+      const particles = Array.from({ length: 40 }, () => ({
+        x: Math.random() * w, y: Math.random() * h, r: Math.random() * 1.6 + 0.4,
+        vx: (Math.random() - 0.5) * 0.2, vy: -Math.random() * 0.22 - 0.05, alpha: Math.random() * 0.4 + 0.1
+      }));
+      function draw() {
+        ctx.clearRect(0, 0, w, h);
+        particles.forEach(p => {
+          p.x += p.vx; p.y += p.vy;
+          if (p.y < -10) { p.y = h + 10; p.x = Math.random() * w; }
+          ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+          ctx.fillStyle = '#c5a059'; ctx.globalAlpha = p.alpha; ctx.fill();
+        });
+        ctx.globalAlpha = 1; requestAnimationFrame(draw);
+      }
+      draw();
+    }
+
+    window.toggleApiDrawer = () => { const d = document.getElementById('apiDrawer'); d.style.display = d.style.display === 'none' ? 'block' : 'none'; };
+    window.toggleJuryDrawer = () => document.getElementById('juryDrawer').classList.toggle('open');
+    window.loadSample = (i) => document.getElementById('storyInput').value = SAMPLES[i];
+
+    window.saveApiSettings = function () {
+      STATE.apiKey = document.getElementById('geminiApiKeyInput').value.trim();
+      STATE.model = document.getElementById('geminiModelSelect').value;
+      STATE.voiceActor = document.getElementById('voiceActorSelectTop').value;
+      localStorage.setItem('muf_gemini_key', STATE.apiKey);
+      localStorage.setItem('muf_gemini_model', STATE.model);
+      localStorage.setItem('muf_voice_actor', STATE.voiceActor);
+      document.getElementById('apiDrawer').style.display = 'none';
+    };
+    window.clearApiSettings = () => { STATE.apiKey = ''; localStorage.removeItem('muf_gemini_key'); document.getElementById('geminiApiKeyInput').value = ''; };
+    window.syncVoiceActor = (val) => { STATE.voiceActor = val; localStorage.setItem('muf_voice_actor', val); document.getElementById('voiceActorSelectTop').value = val; document.getElementById('voiceActorSelectRoom').value = val; };
+
+    function logTelemetry(msg) {
+      const ts = new Date().toTimeString().split(' ')[0];
+      STATE.telemetry.push(`[${ts}] ${msg}`);
+      document.getElementById('liveTelemetryLine').textContent = msg;
+      document.getElementById('juryTelemetryLogs').textContent = STATE.telemetry.join('\n');
+    }
+
+// GEMINI AI ENGINE
+// Ortak Gemini API bağlantısı
+
+async function callGeminiJSON(prompt) {
+  if (!STATE.apiKey) {
+    throw new Error("Gemini API anahtarı bulunamadı.");
+  }
+
+  const url =
+    `https://generativelanguage.googleapis.com/v1beta/models/${STATE.model}:generateContent?key=${encodeURIComponent(STATE.apiKey)}`;
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      contents: [
+        {
+          parts: [{ text: prompt }]
+        }
+      ],
+      generationConfig: {
+        responseMimeType: "application/json",
+        temperature: 0.8
+      }
+    })
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(
+      data.error?.message || "Gemini API bağlantı hatası."
+    );
+  }
+
+  const result = data.candidates?.[0]?.content?.parts
+    ?.map(part => part.text || "")
+    .join("")
+    .trim();
+
+  if (!result) {
+    throw new Error("Gemini boş yanıt döndürdü.");
+  }
+
+  try {
+    return JSON.parse(result);
+  } catch {
+    throw new Error("Gemini geçerli JSON oluşturamadı.");
+  }
+}
+
+// GEMINI STAGE 1 — STORY ANALYST
+// Hikâyeyi yorumlamadan önce temel duygu, olay, nesne ve sembolleri çıkarır.
+async function analyzeStory(story) {
+  logTelemetry('Aşama 1/3: Hikâye Analisti anıyı inceliyor...');
+
+  const prompt = `
+Sen Yarım Kalmış Şeyler Müzesi'nin Hikâye Analistisin.
+Görevin, kullanıcının anlattığı hikâyeyi sonraki sanat üretim aşamasına
+aktarılabilecek açık ve tarafsız bir analiz hâline getirmektir.
+
+KURALLAR:
+- Kullanıcının anlatmadığı olayları, kişileri veya geçmiş bilgilerini uydurma.
+- Hikâyede açıkça bulunan olguları çıkarımlardan ayrı tut.
+- Ana ve ikincil duyguları belirt.
+- Görsel olarak kullanılabilecek somut nesneleri ve mekân ayrıntılarını koru.
+- Sembol önerirken hikâyede açıkça bulunup bulunmadığını belirt.
+- Belirsiz kalan noktaları tahmin ederek doldurma.
+- Türkçe yanıt ver ve yalnızca istenen JSON nesnesini döndür.
+
+JSON ŞEMASI:
+{
+  "main_emotion": "string",
+  "secondary_emotions": ["string"],
+  "central_conflict": "string",
+  "people_and_relationships": ["string"],
+  "setting": "string",
+  "key_moment": "string",
+  "concrete_objects": ["string"],
+  "story_facts": ["Hikâyede açıkça anlatılan bilgiler"],
+  "possible_symbols": [
+    {
+      "symbol": "string",
+      "connection_to_story": "string",
+      "explicit_or_interpreted": "explicit veya interpreted"
+    }
+  ],
+  "atmosphere": "string",
+  "visual_direction": "string",
+  "uncertainties": ["Kesin olarak çıkarılamayan noktalar"]
+}
+
+KULLANICININ HİKÂYESİ:
+${JSON.stringify(story)}
+`;
+
+  const analysis = await callGeminiJSON(prompt);
+
+  if (!analysis.main_emotion || !analysis.key_moment || !Array.isArray(analysis.story_facts)) {
+    throw new Error('Hikâye Analisti beklenen analiz alanlarını döndürmedi.');
+  }
+
+  STATE.storyAnalysis = analysis;
+  return analysis;
+}
+
+// GEMINI STAGE 3 — QUALITY CHECKER
+// Üretilen metni ve gerçek görseli, kullanıcının hikâyesiyle karşılaştırır.
+async function checkArtworkQuality(story, analysis, exhibition, imageDataUrl) {
+  logTelemetry('Aşama 3/3: Kalite Denetçisi eser ile anıyı karşılaştırıyor...');
+
+  const match = imageDataUrl.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/);
+  if (!match) {
+    throw new Error('Oluşturulan görsel kalite kontrolüne aktarılamadı.');
+  }
+
+  const mimeType = match[1];
+  const base64Data = match[2];
+  const prompt = `
+Sen Yarım Kalmış Şeyler Müzesi'nin Kalite Denetçisisin.
+Kullanıcının orijinal hikâyesini, Hikâye Analisti'nin yapılandırılmış analizini,
+Küratörün ürettiği eser metnini ve ekli gerçek görseli birlikte değerlendir.
+
+KONTROL ET:
+1. Eser metni hikâyenin temel duygusuna ve olayına sadık mı?
+2. Metin, hikâyede bulunmayan kişi/olay/nesneleri gerçekmiş gibi ekliyor mu?
+3. Görsel, hikâyedeki somut ayrıntılar ve analizdeki görsel yönle uyumlu mu?
+4. Görsel ile eser açıklaması birbiriyle tutarlı mı?
+5. Belirgin bir çelişki veya kalite sorunu var mı?
+
+YORUM İLKELERİ:
+- Sadece gerçekten gördüğün görsel hakkında değerlendirme yap.
+- Hikâyede olmayan ayrıntıları kesin bilgi gibi sunma.
+- Küçük sanatsal yorumları hata sayma; önemli çelişkileri belirt.
+- Türkçe yanıt ver. Yalnızca JSON döndür.
+
+JSON ŞEMASI:
+{
+  "passed": true,
+  "score": 0,
+  "text_matches_story": true,
+  "image_matches_story": true,
+  "image_matches_description": true,
+  "issues": ["Varsa somut sorunlar"],
+  "recommendation": "Kısa Türkçe değerlendirme"
+}
+
+ORİJİNAL HİKÂYE:
+${JSON.stringify(story)}
+
+HİKÂYE ANALİZİ:
+${JSON.stringify(analysis)}
+
+KÜRATÖRÜN ESER METNİ:
+${JSON.stringify({
+    title: exhibition.title,
+    unspoken_sentence: exhibition.unspoken_sentence,
+    art_title: exhibition.art_title,
+    medium: exhibition.medium,
+    description: exhibition.description,
+    curator_note: exhibition.curator_note,
+    poem: exhibition.poem,
+    visual_prompt: exhibition.visual_prompt
+  })}
+`;
+
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${STATE.model}:generateContent?key=${encodeURIComponent(STATE.apiKey)}`;
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      contents: [{
+        parts: [
+          { text: prompt },
+          { inlineData: { mimeType, data: base64Data } }
+        ]
+      }],
+      generationConfig: {
+        responseMimeType: 'application/json',
+        temperature: 0.2
+      }
+    })
+  });
+
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.error?.message || 'Kalite Denetçisi Gemini yanıtı alınamadı.');
+  }
+
+  const result = data.candidates?.[0]?.content?.parts
+    ?.map(part => part.text || '')
+    .join('')
+    .trim();
+  if (!result) throw new Error('Kalite Denetçisi boş yanıt döndürdü.');
+
+  const quality = JSON.parse(result);
+  if (typeof quality.passed !== 'boolean' || typeof quality.score !== 'number') {
+    throw new Error('Kalite Denetçisi beklenen JSON alanlarını döndürmedi.');
+  }
+
+  STATE.qualityCheck = quality;
+  return quality;
+}
+
+    window.runMuseumPipeline = async function () {
+      const story = document.getElementById('storyInput').value.trim();
+      if (story.length < 10) { alert('Lütfen müze için en az bir cümlelik bir anı yazın.'); return; }
+
+      const btn = document.getElementById('generateBtn');
+      btn.disabled = true; btn.textContent = 'BAŞYAPIT HAZIRLANIYOR...';
+      document.getElementById('pipelineStatusBox').style.display = 'block';
+      STATE.telemetry = [];
+
+      try {
+        let exhibition;
+        if (STATE.apiKey) {
+          // AŞAMA 1: Hikâyeyi analiz et.
+          const storyAnalysis = await analyzeStory(story);
+
+          // AŞAMA 2: Mevcut eser üretim adımı şimdilik korunuyor.
+          // Sonraki değişiklikte bunu ayrı bir fonksiyona taşıyacağız.
+          logTelemetry('Aşama 2/3: Sanat Küratörü analizden eseri oluşturuyor...');
+          const url = `https://generativelanguage.googleapis.com/v1beta/models/${STATE.model}:generateContent?key=${encodeURIComponent(STATE.apiKey)}`;
+          const res = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: `Using the original story AND the structured story analysis below, create the museum artwork content. Do not contradict the story or invent concrete events. Return ONLY valid JSON with this schema: {"title":"string (Turkish)","unspoken_sentence":"string (Turkish)","art_title":"string (Turkish)","medium":"string (Turkish)","description":"string (Turkish)","curator_note":"string (Turkish)","poem":"string with 4 lines in Turkish separated by \\n","visual_prompt":"detailed image prompt in English","facts":["string"]}\\nORIGINAL STORY: ${story}\\nSTORY ANALYSIS: ${JSON.stringify(storyAnalysis)}` }] }],
+              generationConfig: { responseMimeType: 'application/json' }
+            })
+          });
+          const data = await res.json();
+          exhibition = JSON.parse(data.candidates[0].content.parts[0].text);
+        } else {
+          logTelemetry('Demo Modu: Başyapıt kurgulanıyor...');
+          await sleep(400);
+          exhibition = {
+            title: "SEKİZ ÖLÇÜLÜK SESSİZLİK",
+            unspoken_sentence: "Son notayı koyarsam, sesin bu odadan tamamen çekilmiş olacak.",
+            art_title: "Mühürlü Kuyruklu Piyano",
+            medium: "Tuval Üzerine Yağlıboya & Altın Varak • 2026",
+            description: "Karanlık bir galeri salonunun tam merkezinde, tavandan süzülen tek bir altın ışık huzmesinin altında asılı duran anı nesnesi. Gövdesindeki ince çatlaklardan sızan altın varak çizgiler, zamanın o anda durduğunu fısıldıyor.",
+            curator_note: "Bu eser, ziyaretçinin anısındaki fiziksel nesneyi zamanın dışına çıkararak yas ve bekleyiş duygusunu görünür kılar.",
+            poem: "Duyuyor musun, durduğumuz yerdeki o ince boşluğu?\nHer adım bir sözdü, ama tam eşikte sustu.\nYarım kalan şey eksilmez, zamanın içinde uyur;\nSöylenmeyen her cümle, en derin yankımız olur.",
+            visual_prompt: "Dark surrealist museum painting of a grand piano levitating in mid-air sealed with black wax, antique gold chiaroscuro",
+            facts: [story]
+          };
+        }
+
+        STATE.exhibitionData = exhibition;
+        document.getElementById('catalogMetaTag').textContent = 'KATALOG #MUF-2026-104 • MERKEZ SALON';
+        document.getElementById('exhibitionTitle').textContent = exhibition.title;
+        document.getElementById('unspokenSentence').textContent = `"${exhibition.unspoken_sentence}"`;
+        document.getElementById('artTitle').textContent = exhibition.art_title;
+        document.getElementById('artMedium').textContent = exhibition.medium;
+        document.getElementById('artDescription').textContent = exhibition.description;
+        document.getElementById('curatorNote').textContent = exhibition.curator_note;
+
+        // Populate Poem
+        const lines = exhibition.poem.split('\n');
+        document.getElementById('poemLinesContainer').innerHTML = lines.map((l, i) => `<span class="poem-line" id="poemLine-${i}">${l}</span>`).join('');
+        document.getElementById('juryFactsList').innerHTML = (exhibition.facts || [story]).map(f => `<li>${f}</li>`).join('');
+
+        // Generate Masterpiece Image
+        logTelemetry('Merkez başyapıt tuvale işleniyor...');
+        document.getElementById('artSourceTag').textContent = 'Görsel Kaynağı: Surrealist Fine-Art Flux Engine';
+        const imgRes = await fetch(`https://image.pollinations.ai/prompt/${encodeURIComponent(exhibition.visual_prompt + ', dark gothic museum oil painting, gold highlights, no text')}?width=800&height=1000&nologo=true&model=flux`);
+        const blob = await imgRes.blob();
+        STATE.masterpieceDataUrl = await new Promise(r => { const rd = new FileReader(); rd.onloadend = () => r(rd.result); rd.readAsDataURL(blob); });
+
+        document.getElementById('masterpieceImg').src = STATE.masterpieceDataUrl;
+
+        // AŞAMA 3: Gerçek görseli de Gemini Vision'a göndererek kalite kontrolü yap.
+        if (STATE.apiKey) {
+          try {
+            const quality = await checkArtworkQuality(story, STATE.storyAnalysis, exhibition, STATE.masterpieceDataUrl);
+            const qualitySummary = `Kalite kontrolü: ${quality.passed ? 'UYGUN' : 'GÖZDEN GEÇİRİLMELİ'} • ${quality.score}/100 — ${quality.recommendation}`;
+            exhibition.facts = [...(exhibition.facts || []), qualitySummary, ...(quality.issues || []).map(issue => `Kontrol notu: ${issue}`)];
+            document.getElementById('juryFactsList').innerHTML = exhibition.facts.map(f => `<li>${f}</li>`).join('');
+            logTelemetry(qualitySummary);
+          } catch (qualityError) {
+            STATE.qualityCheck = { passed: false, score: 0, issues: [qualityError.message], recommendation: 'Görsel kalite kontrolü tamamlanamadı.' };
+            exhibition.facts = [...(exhibition.facts || []), `Kalite kontrolü tamamlanamadı: ${qualityError.message}`];
+            document.getElementById('juryFactsList').innerHTML = exhibition.facts.map(f => `<li>${f}</li>`).join('');
+            logTelemetry('Aşama 3/3: Kalite kontrolü tamamlanamadı; eser yine de gösteriliyor.');
+          }
+        }
+
+        document.getElementById('inputSection').style.display = 'none';
+        document.getElementById('exhibitionSection').style.display = 'block';
+        startAmbientMusic();
+      } catch (e) {
+        alert('Hata: ' + e.message);
+      } finally {
+        btn.disabled = false; btn.textContent = 'BAŞYAPITI OLUŞTUR →';
+      }
+    };
+
+    function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+    window.resetExhibition = function () {
+      window.stopNarration();
+      document.getElementById('exhibitionSection').style.display = 'none';
+      document.getElementById('inputSection').style.display = 'block';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    /* AUDIO ENGINE */
+    function initAudioEngine() {
+      if (STATE.audioCtx) { if (STATE.audioCtx.state === 'suspended') STATE.audioCtx.resume(); return; }
+      const AC = window.AudioContext || window.webkitAudioContext;
+      STATE.audioCtx = new AC();
+      STATE.musicGain = STATE.audioCtx.createGain(); STATE.musicGain.gain.value = STATE.musicVolume * 0.35; STATE.musicGain.connect(STATE.audioCtx.destination);
+      STATE.voiceGain = STATE.audioCtx.createGain(); STATE.voiceGain.gain.value = STATE.voiceVolume; STATE.voiceGain.connect(STATE.audioCtx.destination);
+    }
+
+    function startAmbientMusic() {
+      initAudioEngine();
+      if (STATE.musicTimer) clearInterval(STATE.musicTimer);
+      const notes = [62, 65, 69, 70, 69, 65, 64, 62];
+      let step = 0;
+      const playStep = () => {
+        if (!STATE.musicPlaying || !STATE.audioCtx) return;
+        const midi = notes[step % notes.length];
+        const freq = 440 * Math.pow(2, (midi - 69) / 12);
+        const now = STATE.audioCtx.currentTime;
+        const osc = STATE.audioCtx.createOscillator();
+        const env = STATE.audioCtx.createGain();
+        osc.type = 'triangle'; osc.frequency.setValueAtTime(freq, now);
+        env.gain.setValueAtTime(0.0001, now); env.gain.linearRampToValueAtTime(0.2, now + 0.05); env.gain.exponentialRampToValueAtTime(0.0001, now + 2.5);
+        osc.connect(env); env.connect(STATE.musicGain);
+        osc.start(now); osc.stop(now + 2.6);
+        step++;
+      };
+      STATE.musicPlaying = true;
+      document.getElementById('musicToggleBtn').innerHTML = '❚❚ Oda Müziği';
+      playStep();
+      STATE.musicTimer = setInterval(playStep, 2800);
+    }
+
+    window.toggleAmbientMusic = function () {
+      initAudioEngine();
+      if (STATE.musicPlaying) {
+        STATE.musicPlaying = false; clearInterval(STATE.musicTimer);
+        document.getElementById('musicToggleBtn').innerHTML = '▶ Oda Müziği';
+      } else {
+        startAmbientMusic();
+      }
+    };
+
+    window.setMusicVolume = (v) => { STATE.musicVolume = v / 100; if (STATE.musicGain) STATE.musicGain.gain.value = STATE.musicVolume * 0.35; };
+    window.setVoiceVolume = (v) => { STATE.voiceVolume = v / 100; if (STATE.voiceGain) STATE.voiceGain.gain.value = STATE.voiceVolume; };
+
+    /* EXPRESSIVE & EMPHASIZED NARRATION (URGULU SES) */
+    window.toggleNarration = function () {
+      if (STATE.isNarrating) { window.stopNarration(); return; }
+      if (!STATE.exhibitionData) return;
+      initAudioEngine();
+      STATE.isNarrating = true;
+      document.getElementById('narrateBtn').innerHTML = '⏳ OKUNUYOR...';
+
+      const lines = STATE.exhibitionData.poem.split('\n');
+      let idx = 0;
+      const speakLine = () => {
+        if (!STATE.isNarrating || idx >= lines.length) { window.stopNarration(); return; }
+        document.querySelectorAll('.poem-line').forEach((el, i) => el.classList.toggle('speaking-active', i === idx));
+        
+        const utter = new SpeechSynthesisUtterance(lines[idx]);
+        utter.lang = 'tr-TR'; 
+        utter.rate = 0.82; // Daha yavaş, tane tane ve hissedilerek
+        utter.pitch = 0.90; // Biraz daha derin ve otoriteli (sanatçı tonu)
+        utter.volume = STATE.voiceVolume;
+
+        // Tarayıcı destekliyorsa Türkçe ses seçimi ve vurgu optimizasyonu
+        const voices = window.speechSynthesis.getVoices();
+        const trVoice = voices.find(v => v.lang.includes('tr') && (v.name.includes('Google') || v.name.includes('Yelda') || v.name.includes('Cem')));
+        if (trVoice) utter.voice = trVoice;
+
+        utter.onend = () => { 
+          idx++; 
+          STATE.speechTimer = setTimeout(speakLine, 950); // Mısralar arası nefes alma payı (dramatik duraklama)
+        };
+        window.speechSynthesis.speak(utter);
+      };
+      speakLine();
+    };
+
+    window.stopNarration = function () {
+      STATE.isNarrating = false;
+      if (STATE.speechTimer) clearTimeout(STATE.speechTimer);
+      if (window.speechSynthesis) window.speechSynthesis.cancel();
+      document.querySelectorAll('.poem-line').forEach(el => el.classList.remove('speaking-active'));
+      document.getElementById('narrateBtn').innerHTML = '▶ VURGULU ŞİİRİ SESLENDİR';
+    };
+
+    window.downloadArtwork = () => { if (!STATE.masterpieceDataUrl) return; const a = document.createElement('a'); a.href = STATE.masterpieceDataUrl; a.download = 'yarim_kalmis_seyler_muzesi_basyapiti.png'; a.click(); };
+    window.downloadCertificate = window.downloadArtwork;
+  </script>
+</body>
+</html>
